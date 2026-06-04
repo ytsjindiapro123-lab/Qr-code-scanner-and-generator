@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Updated Tab Name -->
+    <title>Shubh's QR Genrator</title>
+    <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.5.1/dist/bwip-js-min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-hover: #1557b0;
+            --bg-soft: #f1f3f4;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--bg-soft) no-repeat center center fixed;
+            background-size: cover;
+            transition: background 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 360px;
+            border: 1px solid rgba(255,255,255,0.4);
+            animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        h2 {
+            color: #202124;
+            margin-bottom: 15px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(0,0,0,0.05);
+            border-radius: 100px;
+            padding: 4px;
+            margin-bottom: 25px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 100px;
+            font-weight: 500;
+            color: #5f6368;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section { display: none; opacity: 0; transform: scale(0.95); transition: 0.3s; }
+        .section.active { display: block; opacity: 1; transform: scale(1); }
+
+        input[type="text"] {
+            padding: 14px 20px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #dadce0;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+
+        input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1); }
+
+        .qr-area {
+            background: white;
+            padding: 15px;
+            border-radius: 18px;
+            margin: 15px 0;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 100px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+            display: inline-block;
+            box-sizing: border-box;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(26, 115, 232, 0.3);
+        }
+
+        #result-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f0fe;
+            border-radius: 16px;
+            word-break: break-all;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bg-trigger {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 100px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            border: none;
+        }
+
+        #bgUpload, #qrFileScan { display: none; }
+        canvas { max-width: 100%; height: auto !important; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('scan', event)">Scan</div>
+        <div class="tab" onclick="switchTab('make', event)">Make</div>
+    </div>
+
+    <!-- SCAN SECTION -->
+    <div id="scan-section" class="section active">
+        <h2>Scan QR</h2>
+        <p style="color: #5f6368; font-size: 14px; margin-bottom: 20px;">Upload an image to extract data</p>
+        
+        <label for="qrFileScan" class="btn">Upload QR Image</label>
+        <input type="file" id="qrFileScan" accept="image/*">
+        
+        <div id="result-box">
+            <p id="scannedText" style="margin: 0 0 10px 0; font-size: 14px; color: #185abc; font-weight: 500;"></p>
+            <a id="visitBtn" class="btn" style="display:none;">Open Link</a>
+        </div>
+    </div>
+
+    <!-- MAKE SECTION -->
+    <div id="make-section" class="section">
+        <!-- Section title update -->
+        <h2>Shubh's Genrator</h2>
+        <input type="text" id="qrInput" placeholder="Paste link or text here..." spellcheck="false">
+        <div class="qr-area"><canvas id="qrCanvas"></canvas></div>
+        <button class="btn" onclick="downloadQR()">Save as Image</button>
+    </div>
+</div>
+
+<label for="bgUpload" class="bg-trigger">
+    <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1a73e8"></path></svg>
+    <span>Set Background</span>
+</label>
+<input type="file" id="bgUpload" accept="image/*">
+
+<script>
+    function switchTab(mode, event) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        document.getElementById(mode + '-section').classList.add('active');
+    }
+
+    document.getElementById('bgUpload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => document.body.style.backgroundImage = `url('${ev.target.result}')`;
+            reader.readAsDataURL(file);
+        }
+    });
+
+    const input = document.getElementById('qrInput');
+    input.addEventListener('input', () => {
+        const val = input.value.trim();
+        if (!val) return;
+        bwipjs.toCanvas('qrCanvas', { bcid: 'qrcode', text: val, scale: 5, eclevel: 'M' });
+    });
+
+    function downloadQR() {
+        const link = document.createElement('a');
+        link.download = 'shubh-qr.png';
+        link.href = document.getElementById('qrCanvas').toDataURL();
+        link.click();
+    }
+
+    const fileInput = document.getElementById('qrFileScan');
+    fileInput.addEventListener('change', e => {
+        if (e.target.files.length === 0) return;
+        const imageFile = e.target.files[0];
+        const scanner = new Html5Qrcode("qrCanvas");
+        scanner.scanFile(imageFile, false)
+            .then(decodedText => showResult(decodedText))
+            .catch(err => alert("Could not read QR code."));
+    });
+
+    function showResult(text) {
+        const box = document.getElementById('result-box');
+        const txt = document.getElementById('scannedText');
+        const btn = document.getElementById('visitBtn');
+        box.style.display = 'block';
+        txt.innerText = text;
+        const urlPattern = /^(https?:\/\/[^\s]+)/g;
+        if (urlPattern.test(text)) {
+            btn.style.display = 'block';
+            btn.href = text;
+            btn.target = "_blank";
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    window.onload = () => {
+        bwipjs.toCanvas('qrCanvas', { bcid: 'qrcode', text: 'Shubh', scale: 5 });
+    };
+</script>
+</body>
+</html>
